@@ -84,7 +84,7 @@ if (isset($_POST['submitB'])) {
     ];
     file_put_contents('data.json', json_encode($data));
 
-    $command = escapeshellcmd('python scripts/predict.py');
+    $command = escapeshellcmd('python predict.py');
     $output = shell_exec($command);
     $output = trim($output); 
 
