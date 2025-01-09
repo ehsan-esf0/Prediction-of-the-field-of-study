@@ -1,3 +1,101 @@
+<?php
+$host = "localhost";
+$username = "root";
+$password = "";
+$dbname = "gradesdata";
+
+try {
+    $db = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
+    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    die("ERROR: Could not connect. " . $e->getMessage());
+}
+
+if (isset($_POST['submitA'])) {
+    $sql = "INSERT INTO user (math, physics, chemistry, adabi, arabi, dini, english , fieldOfStudy) VALUES (:math, :physics, :chemistry, :adabi, :arabi, :dini, :english , :fieldOfStudy)";
+    $stmt = $db->prepare($sql);
+
+    $math = !empty($_POST['mathA']) ? $_POST['mathA'] : 0;
+    $physics = !empty($_POST['physicsA']) ? $_POST['physicsA'] : 0;
+    $chemistry = !empty($_POST['chemistryA']) ? $_POST['chemistryA'] : 0;
+    $adabi = !empty($_POST['adabiA']) ? $_POST['adabiA'] : 0;
+    $arabi = !empty($_POST['arabiA']) ? $_POST['arabiA'] : 0;
+    $dini = !empty($_POST['diniA']) ? $_POST['diniA'] : 0;
+    $english = !empty($_POST['englishA']) ? $_POST['englishA'] : 0;
+    $fieldOfStudy = !empty($_POST['fieldOfStudyA']) ? $_POST['fieldOfStudyA'] : 0;
+
+    $stmt->bindParam(':math', $math);
+    $stmt->bindParam(':physics', $physics);
+    $stmt->bindParam(':chemistry', $chemistry);
+    $stmt->bindParam(':adabi', $adabi);
+    $stmt->bindParam(':arabi', $arabi);
+    $stmt->bindParam(':dini', $dini);
+    $stmt->bindParam(':english', $english);
+    $stmt->bindParam(':fieldOfStudy', $fieldOfStudy);
+
+    if ($stmt->execute()) {
+?>
+        <script>
+            alert("ثبت شد")
+        </script>
+    <?php
+    } else { ?>
+        <script>
+            alert("ثبت نشد")
+        </script>
+<?php
+    }
+}
+if (isset($_POST['submitB'])) {
+    $sql = "SELECT math, physics, chemistry, adabi, arabi, dini, english, fieldOfStudy FROM user";
+    $stmt = $db->prepare($sql);
+    $stmt->execute();
+    $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $features = [];
+    $labels = [];
+    foreach ($results as $row) {
+        $features[] = [
+            $row['math'],
+            $row['physics'],
+            $row['chemistry'],
+            $row['adabi'],
+            $row['arabi'],
+            $row['dini'],
+            $row['english']
+        ];
+        $labels[] = $row['fieldOfStudy'];
+    }
+
+    $new_grades = [
+        $_POST['math'],
+        $_POST['physics'],
+        $_POST['chemistry'],
+        $_POST['adabi'],
+        $_POST['arabi'],
+        $_POST['dini'],
+        $_POST['english']
+    ];
+
+    $data = [
+        'features' => $features,
+        'labels' => $labels,
+        'new_grades' => $new_grades
+    ];
+    file_put_contents('data.json', json_encode($data));
+
+    $command = escapeshellcmd('python scripts/predict.py');
+    $output = shell_exec($command);
+    $output = trim($output); 
+
+    if (!empty($output)) {
+       // echo "رشته تحصیلی پیش‌بینی شده: " . htmlspecialchars($output);
+    } else {
+        echo "خطایی رخ داده است و رشته تحصیلی پیش‌بینی نشد.";
+    }
+}
+
+?>
 <!DOCTYPE html>
 <html lang="en" dir="rtl">
     <head>
